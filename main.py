@@ -1,6 +1,13 @@
 import numpy as np
 import cv2
 import tensorflow.keras
+from pygame import mixer
+from playsound import playsound
+import asyncio
+import time
+
+
+
 
 # 얼굴인식 데이터 가져오기
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -12,7 +19,7 @@ model_filename ='./keras_model.h5'
 model = tensorflow.keras.models.load_model(model_filename)
 
 # 웹캠 0번으로 부터 캡쳐시작
-capture = cv2.VideoCapture(1)
+capture = cv2.VideoCapture(0)
 
 # 영상의 Width와 Height 크기조절
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
@@ -53,6 +60,12 @@ def predict(frame):
     prediction = model.predict(frame)
     return prediction
 
+yesCount = 0;
+noCount = 0;
+
+
+
+
 while True:
     if cv2.waitKey(10) > 0:
         break
@@ -64,19 +77,35 @@ while True:
     detect_face = preprocessing(frame)[1]
     if (detect_face == "yes"):
         cv2.putText(frame, "No Mask", (20, 70), cv2.FONT_HERSHEY_PLAIN, 4, (0, 0, 255))
+        if noCount == 1:
+            playsound('noti.mp3', False)
+        if noCount > 25:
+            noCount = 0
+
+        noCount = noCount + 1
+        print(noCount)
+
     if (detect_face == "no"):
         if (prediction[0, 0] < prediction[0, 1]):
             print('Yes Mask')
             cv2.putText(frame, "Yes Mask", (20, 70), cv2.FONT_HERSHEY_PLAIN, 4, (0, 255, 0))
             # (넣을영상,넣을텍스트,텍스트위치(x,y),폰트명,폰트크기,색상(R,G,B))
+            if yesCount == 1:
+                playsound('yes_noti.mp3', False)
+            if yesCount > 35:
+                yesCount = 0
+
+            yesCount = yesCount + 1
+            print(yesCount)
+
 
         else:
-            cv2.putText(frame, "Face not Detected", (20, 70), cv2.FONT_HERSHEY_PLAIN, 4, (0, 0, 0))
+            cv2.putText(frame, "Face not Detected", (20, 70), cv2.FONT_HERSHEY_PLAIN, 4, (255, 0, 255))
             # (넣을영상,넣을텍스트,텍스트위치(x,y),폰트명,폰트크기,색상(R,G,B))
             print('No Detected')
     print(detect_face)
 
 
 
-    cv2.imshow("camera test", frame)
+    cv2.imshow("Mask Detector", frame)
     #영상을 출력한다.
